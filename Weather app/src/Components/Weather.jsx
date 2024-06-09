@@ -8,12 +8,12 @@ import snow_icon from '../Assets/snow.png'
 import wind_icon from '../Assets/wind.png'
 import humidity_icon from '../Assets/humidity.png'
 import { useEffect, useRef, useState } from 'react'
+import ClipLoader from "react-spinners/ClipLoader";
 
 const Weather = () => {
-
-
-    const inputref = useRef() 
-    const [weatherData,setWeatherData] = useState(false);
+    const inputref = useRef();
+    const [weatherData, setWeatherData] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const allIcons = {
         "01d": clear_icon,
@@ -32,19 +32,23 @@ const Weather = () => {
         "13n": snow_icon,
     }
 
-    const search = async (city)=>{
-
-        if(city===""){
+    const search = async (city) => {
+        if (city === "") {
             alert("Enter City Name");
             return;
         }
+
+        setLoading(true);
 
         try {
             const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${import.meta.env.VITE_APP_ID}`;
 
             const response = await fetch(url);
             const data = await response.json();
-            console.log(data);
+
+            if (!response.ok) {
+                alert(data.message);
+            }
 
             const icon = allIcons[data.weather[0].icon] || clear_icon;
 
@@ -54,62 +58,57 @@ const Weather = () => {
                 temperature: Math.floor(data.main.temp),
                 location: data.name,
                 icon: icon,
-            })
-
-        } 
-        catch (error){
-
+            });
+        } catch (error) {
             setWeatherData(false);
             console.error("Error in fetching weather data");
+        } finally {
+            setLoading(false);
         }
     }
 
-        useEffect(()=> {
-            search("London");
-        },[])
+    useEffect(() => {
+        search("London");
+    }, []);
 
-
-
-  return (
-    <div className='weather'>
-        <div className="search-bar">
-            <input ref={inputref} placeholder='search' />
-            <img src={search_icon} alt="" onClick={()=>search(inputref.current.value)} />
-
-        </div>
-
-        {weatherData?<>
-        
-        <img src={weatherData.icon} alt="" className='weather-icon'/>
-        <p className='temperature'>{weatherData.temperature}°c</p>
-        <p className='location'>{weatherData.location}</p>
-        <div className="weather-data">
-            <div className="col">
-                <img src={humidity_icon} alt="" />
-                <div>
-                    <p>{weatherData.humidity} %</p>
-                    <span>Humidity</span>
-                </div>
+    return (
+        <div className='weather'>
+            <div className="search-bar">
+                <input ref={inputref} placeholder='search' />
+                <img src={search_icon} alt="" onClick={() => search(inputref.current.value)} />
             </div>
-            <div className="col">
-                <img src={wind_icon} alt="" />
-                <div>
-                    <p>{weatherData.windSpeed} Km/h</p>
-                    <span>Wind Speed</span>
+
+            {loading ? (
+                <div className="loader">
+                    <ClipLoader color={"#36d7b7"} loading={loading} size={50} />
                 </div>
-            </div>
+            ) : (
+                weatherData && (
+                    <>
+                        <img src={weatherData.icon} alt="" className='weather-icon' />
+                        <p className='temperature'>{weatherData.temperature}°c</p>
+                        <p className='location'>{weatherData.location}</p>
+                        <div className="weather-data">
+                            <div className="col">
+                                <img src={humidity_icon} alt="" />
+                                <div>
+                                    <p>{weatherData.humidity} %</p>
+                                    <span>Humidity</span>
+                                </div>
+                            </div>
+                            <div className="col">
+                                <img src={wind_icon} alt="" />
+                                <div>
+                                    <p>{weatherData.windSpeed} Km/h</p>
+                                    <span>Wind Speed</span>
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                )
+            )}
         </div>
-
-
-
-        </>:<></>}
-
-        
-        
-
-        
-    </div>
-  )
+    )
 }
 
 export default Weather
